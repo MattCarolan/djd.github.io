@@ -1,0 +1,48 @@
+name: Prepare and verify DJD website
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prepare-assets.yml'
+      - 'scripts/**'
+      - 'albums.json'
+      - 'assets/beyond-the-clouds-source.png'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: read
+concurrency:
+  group: djd-assets
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install image packaging dependency
+        run: python -m pip install 'Pillow>=11,<13'
+      - name: Prepare artwork, fonts, favicons, and published song data
+        run: python scripts/prepare-assets.py
+      - name: Validate script syntax
+        run: node --check app.js
+      - name: Check all assets and published audio previews
+        run: python scripts/verify-site.py
+      - name: Read current GitHub Pages configuration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/pages" --jq '{html_url,cname,status,build_type,source}'
+      - name: Save prepared website assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets favicon.ico apple-touch-icon.png albums.json index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Prepare and verify optimized DJD website assets"
+            git push origin HEAD:main
+          fi
