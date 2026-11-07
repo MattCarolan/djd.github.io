@@ -17,7 +17,7 @@ jobs:
         run: |
           gh api "repos/$GITHUB_REPOSITORY/pages" --jq '{html_url,cname,status,https_enforced,https_certificate,source}'
           if gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.https_certificate.state == "approved" and .https_enforced == false' | grep -q true; then
-            gh api --method PATCH "repos/$GITHUB_REPOSITORY/pages" -F https_enforced=true
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/pages" -F https_enforced=true
           fi
       - name: Verify public homepage and required assets
         run: |
