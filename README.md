@@ -6,7 +6,7 @@ Both original album covers, the artist image, listening links, and 32 audio prev
 
 The asset preparation workflow downloads the original images and self-hosted fonts, optimizes the hero artwork, prepares vinyl-record favicons, and checks all 32 published audio previews. Generated assets are committed to main. Runtime hosting needs no build.
 
-Typography: DM Sans and Libre Caslon Display, both SIL Open Font License 1.1. License texts are in assets/.
+Typography: DM Sans, Libre Caslon Display, and Playfair Display, under SIL Open Font License 1.1. The hero uses a self-hosted Playfair Display Bold subset for “Turn up tomorrow.” to match the concept's bold serif lettering. License texts are in assets/.
 
 Validation: node --check app.js and python scripts/verify-site.py. Image packaging: python scripts/prepare-assets.py (requires Pillow).
 
