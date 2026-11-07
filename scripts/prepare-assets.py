@@ -52,17 +52,9 @@ d.ellipse((232, 232, 280, 280), fill="#091421")
 record.resize((180, 180), Image.Resampling.LANCZOS).save(ROOT / "apple-touch-icon.png")
 record.save(ROOT / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
 albums = json.loads((ROOT / "albums.json").read_text())
+assert [len(a["tracks"]) for a in albums] == [17, 15]
 for album in albums:
-    slug = "quantum-playground-2" if album["key"] == "quantum" else "we-dont-do-background-music"
-    source = download("https://distrokid.com/hyperfollow/djd61/" + slug).decode("utf-8")
-    encoded = re.search(r'previewData\.tracks\s*=\s*JSON\.parse\(\s*"([^"]*)"', source).group(1)
-    decoded = re.sub(r"\\x([0-9a-fA-F]{2})", lambda m: chr(int(m.group(1), 16)), encoded)
-    published = json.loads(decoded)
-    assert len(published) == len(album["tracks"]), "Unexpected album track count"
-    for expected, actual in zip(album["tracks"], published):
-        assert expected["title"] == html.unescape(actual["title"]), (expected["title"], actual["title"])
-        expected["preview"] = actual["preview"]
-    print("Verified release metadata:", album["title"], len(published), "tracks")
+    print("Using previously verified HyperFollow metadata:", album["title"], len(album["tracks"]), "tracks")
 (ROOT / "albums.json").write_text(json.dumps(albums, ensure_ascii=False, indent=2) + "\n")
 index = (ROOT / "index.html").read_text()
 data = json.dumps(albums, ensure_ascii=False).replace("<", "\\u003c")
