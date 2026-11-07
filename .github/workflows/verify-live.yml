@@ -1,0 +1,51 @@
+name: Verify published DJD website
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/verify-live.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Pages domain and HTTPS configuration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pages" --jq '{html_url,cname,status,https_enforced,https_certificate,source}'
+          if gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.https_certificate.state == "approved" and .https_enforced == false' | grep -q true; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/pages" -F https_enforced=true
+          fi
+      - name: Verify public homepage and required assets
+        run: |
+          python - <<'PY'
+          import urllib.request, time, json, sys
+          from urllib.error import URLError, HTTPError
+          paths=["","styles.css","app.js","favicon.svg","favicon.ico","assets/beyond-the-clouds.jpg","assets/quantum-playground.jpg","assets/we-dont-do-background-music.jpg","assets/djd-profile.jpg","assets/dm-sans.ttf","assets/libre-caslon-display.ttf"]
+          def verify(base):
+              for path in paths:
+                  with urllib.request.urlopen(base+path,timeout=30) as response:
+                      body=response.read()
+                      assert response.status==200,(path,response.status)
+                      assert len(body)>0,path
+                      if path=="": assert b"Turn up" in body and b"Quantum Playground" in body and b"DJD" in body
+                      if path=="favicon.svg": assert b"<svg" in body
+                      print("PASS",response.status,base+path,len(body),"bytes")
+          for attempt in range(3):
+              try:
+                  verify("https://djd.rip/")
+                  print("LIVE_HTTPS_VERIFIED: https://djd.rip/")
+                  sys.exit(0)
+              except Exception as error:
+                  print("HTTPS check:",repr(error))
+                  if attempt<2: time.sleep(12)
+          try:
+              verify("http://djd.rip/")
+              print("LIVE_HTTP_VERIFIED: http://djd.rip/ (HTTPS provisioning is not ready)")
+          except Exception as error:
+              print("CUSTOM_DOMAIN_CHECK_FAILED:",repr(error))
+              sys.exit(1)
+          PY
